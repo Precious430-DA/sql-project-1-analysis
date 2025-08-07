@@ -1,0 +1,70 @@
+WITH CustomerRevenue AS (
+    SELECT 
+        C.CustomerID,
+        C.CompanyName,
+        SUM(D.OrderQty * D.UnitPrice) AS Revenue
+    FROM SalesLT.Customer C
+    JOIN SalesLT.SalesOrderHeader H ON C.CustomerID = H.CustomerID
+    JOIN SalesLT.SalesOrderDetail D ON H.SalesOrderID = D.SalesOrderID
+    GROUP BY C.CustomerID, C.CompanyName
+),
+Segmented AS (
+    SELECT *,
+        NTILE(4) OVER (ORDER BY Revenue DESC) AS Segment
+    FROM CustomerRevenue
+)
+SELECT * 
+FROM Segmented;
+
+WITH LastOrder AS (
+    SELECT MAX(OrderDate) AS LastOrderDate FROM SalesLT.SalesOrderHeader
+)
+SELECT 
+    H.CustomerID,
+    D.ProductID,
+    P.Name AS ProductName,
+    PC.Name AS CategoryName,
+    H.OrderDate
+FROM SalesLT.SalesOrderHeader H
+JOIN SalesLT.SalesOrderDetail D ON H.SalesOrderID = D.SalesOrderID
+JOIN SalesLT.Product P ON D.ProductID = P.ProductID
+JOIN SalesLT.ProductCategory PC ON P.ProductCategoryID = PC.ProductCategoryID
+JOIN LastOrder LO ON H.OrderDate = LO.LastOrderDate;
+
+CREATE VIEW customersegment AS
+WITH CustomerRevenue AS (
+    SELECT 
+        C.CustomerID,
+        CONCAT(C.FirstName, ' ', C.LastName) AS Name,
+        SUM(D.OrderQty * D.UnitPrice) AS Revenue
+    FROM SalesLT.Customer C
+    JOIN SalesLT.SalesOrderHeader H ON C.CustomerID = H.CustomerID
+    JOIN SalesLT.SalesOrderDetail D ON H.SalesOrderID = D.SalesOrderID
+    GROUP BY C.CustomerID, C.FirstName, C.LastName
+),
+Segmented AS (
+    SELECT *,
+        NTILE(4) OVER (ORDER BY Revenue DESC) AS Segment
+    FROM CustomerRevenue
+)
+SELECT * FROM Segmented;
+
+
+WITH ProductRevenue AS (
+    SELECT 
+        P.ProductID,
+        P.Name AS ProductName,
+        PC.Name AS CategoryName,
+        SUM(D.OrderQty * D.UnitPrice) AS Revenue
+    FROM SalesLT.SalesOrderDetail D
+    JOIN SalesLT.Product P ON D.ProductID = P.ProductID
+    JOIN SalesLT.ProductCategory PC ON P.ProductCategoryID = PC.ProductCategoryID
+    GROUP BY P.ProductID, P.Name, PC.Name
+),
+Ranked AS (
+    SELECT *,
+        RANK() OVER (PARTITION BY CategoryName ORDER BY Revenue DESC) AS RankInCategory
+    FROM ProductRevenue
+)
+SELECT * FROM Ranked
+WHERE RankInCategory <= 3;
