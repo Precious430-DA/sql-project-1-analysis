@@ -1,4 +1,4 @@
-#Query 1: Customer Revenue Segmentation
+-- Query 1: Customer Revenue Segmentation
 WITH CustomerRevenue AS (
     SELECT 
         C.CustomerID,
@@ -17,7 +17,7 @@ Segmented AS (
 SELECT * 
 FROM Segmented;
 
-#Query 2: Products from Most Recent Orders
+-- Query 2: Products from Most Recent Orders
 WITH LastOrder AS (
     SELECT MAX(OrderDate) AS LastOrderDate FROM SalesLT.SalesOrderHeader
 )
@@ -35,8 +35,8 @@ JOIN LastOrder LO ON H.OrderDate = LO.LastOrderDate;
 
 GO
 
- #Query 3: Create Reusable Customer Segment View
-#Drop the view if it already exists, then recreate it
+ -- Query 3: Create Reusable Customer Segment View
+-- Drop the view if it already exists, then recreate it
 DROP VIEW IF EXISTS CustomerSegment;
 GO
 
@@ -60,7 +60,7 @@ FROM (
 
 GO
 
-#Query 4: Top 3 Products by Category Revenue
+-- Query 4: Top 3 Products by Category Revenue
 WITH ProductRevenue AS (
     SELECT 
         P.ProductID,
