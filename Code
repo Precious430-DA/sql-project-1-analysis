@@ -1,3 +1,4 @@
+#Query 1: Customer Revenue Segmentation
 WITH CustomerRevenue AS (
     SELECT 
         C.CustomerID,
@@ -16,6 +17,7 @@ Segmented AS (
 SELECT * 
 FROM Segmented;
 
+#Query 2: Products from Most Recent Orders
 WITH LastOrder AS (
     SELECT MAX(OrderDate) AS LastOrderDate FROM SalesLT.SalesOrderHeader
 )
@@ -31,25 +33,34 @@ JOIN SalesLT.Product P ON D.ProductID = P.ProductID
 JOIN SalesLT.ProductCategory PC ON P.ProductCategoryID = PC.ProductCategoryID
 JOIN LastOrder LO ON H.OrderDate = LO.LastOrderDate;
 
-CREATE VIEW customersegment AS
-WITH CustomerRevenue AS (
+GO
+
+ #Query 3: Create Reusable Customer Segment View
+#Drop the view if it already exists, then recreate it
+DROP VIEW IF EXISTS CustomerSegment;
+GO
+
+CREATE VIEW CustomerSegment AS
+SELECT 
+    CustomerID,
+    Name,
+    Revenue,
+    Segment
+FROM (
     SELECT 
         C.CustomerID,
         CONCAT(C.FirstName, ' ', C.LastName) AS Name,
-        SUM(D.OrderQty * D.UnitPrice) AS Revenue
+        SUM(D.OrderQty * D.UnitPrice) AS Revenue,
+        NTILE(4) OVER (ORDER BY SUM(D.OrderQty * D.UnitPrice) DESC) AS Segment
     FROM SalesLT.Customer C
     JOIN SalesLT.SalesOrderHeader H ON C.CustomerID = H.CustomerID
     JOIN SalesLT.SalesOrderDetail D ON H.SalesOrderID = D.SalesOrderID
     GROUP BY C.CustomerID, C.FirstName, C.LastName
-),
-Segmented AS (
-    SELECT *,
-        NTILE(4) OVER (ORDER BY Revenue DESC) AS Segment
-    FROM CustomerRevenue
-)
-SELECT * FROM Segmented;
+) AS CustomerData;
 
+GO
 
+#Query 4: Top 3 Products by Category Revenue
 WITH ProductRevenue AS (
     SELECT 
         P.ProductID,
